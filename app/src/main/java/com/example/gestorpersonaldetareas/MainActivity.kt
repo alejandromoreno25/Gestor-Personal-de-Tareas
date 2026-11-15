@@ -4,13 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import com.example.gestorpersonaldetareas.model.Prioridad
+import com.example.gestorpersonaldetareas.model.Tarea
+import com.example.gestorpersonaldetareas.ui.TareasScreen
 import com.example.gestorpersonaldetareas.ui.theme.GestorPersonalDeTareasTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +17,47 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GestorPersonalDeTareasTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                // Creamos una lista observable con 2 tareas de prueba
+                val listaTareas = remember {
+                    mutableStateListOf(
+                        Tarea(
+                            id = 1,
+                            titulo = "Configurar proyecto en Android Studio",
+                            descripcion = "Crear paquetes model y ui",
+                            prioridad = Prioridad.ALTA,
+                            completada = true
+                        ),
+                        Tarea(
+                            id = 2,
+                            titulo = "Probar interfaz en el emulador",
+                            descripcion = "Verificar que se ven las tarjetas",
+                            prioridad = Prioridad.MEDIA,
+                            completada = false
+                        )
                     )
                 }
+
+                // Conectamos nuestra pantalla principal
+                TareasScreen(
+                    tareas = listaTareas,
+                    onAgregarClick = {
+                        // Lo programaremos en el siguiente paso (formulario de creación)
+                    },
+                    onCompletadaChange = { tarea, nuevoEstado ->
+                        // Buscamos en qué posición de la lista está esa tarea
+                        val indice = listaTareas.indexOf(tarea)
+                        if (indice != -1) {
+                            listaTareas[indice] = tarea.copy(completada = nuevoEstado)
+                        }
+                    },
+                    onEditarClick = { tarea ->
+                    },
+                    onEliminarClick = { tarea ->
+                        listaTareas.remove(tarea)
+                        // eliminamos la tarea de la lista observable y la notificamos a la UI
+                    }
+                )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    GestorPersonalDeTareasTheme {
-        Greeting("Android")
     }
 }
