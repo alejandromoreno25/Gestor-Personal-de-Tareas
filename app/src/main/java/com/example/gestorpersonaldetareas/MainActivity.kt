@@ -4,63 +4,58 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.example.gestorpersonaldetareas.data.AppDatabase
 import com.example.gestorpersonaldetareas.model.Tarea
 import com.example.gestorpersonaldetareas.ui.TareaDialog
 import com.example.gestorpersonaldetareas.ui.TareasScreen
 import com.example.gestorpersonaldetareas.ui.theme.GestorPersonalDeTareasTheme
-import kotlinx.coroutines.launch
+import com.example.gestorpersonaldetareas.viewmodel.TareaViewModel
+import com.example.gestorpersonaldetareas.viewmodel.TareaViewModelFactory
 
 class MainActivity : ComponentActivity() {
+
+    // Inicializamos el ViewModel pasándole el DAO de nuestra base de datos Room
+    private val viewModel: TareaViewModel by viewModels {
+        val database = AppDatabase.obtenerInstancia(applicationContext)
+        TareaViewModelFactory(database.tareaDao())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             GestorPersonalDeTareasTheme {
-                // Obtenemos la instancia única de la base de datos y su DAO
-                val context = LocalContext.current
-                val db = remember { AppDatabase.obtenerInstancia(context) }
-                val tareaDao = remember { db.tareaDao() }
+                // Observamos el StateFlow del ViewModel
+                val listaTareas by viewModel.listaTareas.collectAsState()
+                val filtroActual by viewModel.filtroActual.collectAsState()
+                // Actualizamos el StateFlow del ViewModel con el filtro elegido por el usuario
 
-                //Observamos en tiempo real las tareas guardadas en SQLite
-                val listaTareas by tareaDao.obtenerTodas().collectAsState(initial = emptyList())
-
-                //Ámbito de corrutinas para ejecutar operaciones de escritura en segundo plano
-                val scope = rememberCoroutineScope()
-
-                // Estados del formulario emergente
                 var mostrarDialogo by remember { mutableStateOf(false) }
                 var tareaAEditar by remember { mutableStateOf<Tarea?>(null) }
 
                 TareasScreen(
                     tareas = listaTareas,
+                    filtroActual = filtroActual,
+                    onFiltroChange = { viewModel.cambiarFiltro(it) },
                     onAgregarClick = {
                         tareaAEditar = null
                         mostrarDialogo = true
                     },
                     onCompletadaChange = { tarea, nuevoEstado ->
-                        scope.launch {
-                            tareaDao.actualizar(tarea.copy(completada = nuevoEstado))
-                            // Actualiza la tarea en Room
-                        // cambiando su estado 'completada'.
-                        }
+                        viewModel.cambiarEstadoCompletada(tarea, nuevoEstado)
                     },
                     onEditarClick = { tarea ->
                         tareaAEditar = tarea
                         mostrarDialogo = true
                     },
                     onEliminarClick = { tarea ->
-                        scope.launch {
-                            tareaDao.eliminar(tarea)
-                            // Elimina la tarea de la base de datos Room
-                        }
+                        viewModel.eliminarTarea(tarea)
                     }
                 )
 
@@ -69,13 +64,10 @@ class MainActivity : ComponentActivity() {
                         tareaExistente = tareaAEditar,
                         onDismiss = { mostrarDialogo = false },
                         onConfirm = { tareaGuardada ->
-                            scope.launch {
-                                if (tareaAEditar == null) {
-                                    tareaDao.insertar(tareaGuardada)
-                                    //Inserta la nueva tarea en Room
-                                } else {
-                                    tareaDao.actualizar(tareaGuardada)
-                                }
+                            if (tareaAEditar == null) {
+                                viewModel.agregarTarea(tareaGuardada)
+                            } else {
+                                viewModel.actualizarTarea(tareaGuardada)
                             }
                             mostrarDialogo = false
                         }
