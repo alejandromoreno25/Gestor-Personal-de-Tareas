@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -26,34 +27,30 @@ fun TareaItem(
     tarea: Tarea,
     onCompletadaChange: (Boolean) -> Unit,
     onEditarClick: () -> Unit,
-    onEliminarClick: () -> Unit
+    onEliminarClick: () -> Unit,
+    onCompartirClick: () -> Unit
 ) {
-    // Creamos la caja exterior que tendra la tarea
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        // Creamos la fila que tendra la tarea y elementos uno al lado del otro
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox para marcar la tarea como completada
             Checkbox(
                 checked = tarea.completada,
                 onCheckedChange = { nuevoValor -> onCompletadaChange(nuevoValor) }
             )
 
-            // Columna para el contenido de la tarea
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 8.dp)
             ) {
-                // Título de la tarea
                 Text(
                     text = tarea.titulo,
                     style = MaterialTheme.typography.titleMedium,
@@ -61,19 +58,33 @@ fun TareaItem(
                     textDecoration = if (tarea.completada) TextDecoration.LineThrough else TextDecoration.None
                 )
 
-                // Descripción de la tarea y prioridad
-                Text(text = "Prioridad: ${tarea.prioridad}")
+                if (tarea.descripcion.isNotBlank()) {
+                    Text(
+                        text = tarea.descripcion,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
 
+                Text(
+                    text = "Prioridad: ${tarea.prioridad}",
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
 
-            // Botón para editar la tarea
+            IconButton(onClick = onCompartirClick) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Compartir tarea"
+                )
+            }
+
             IconButton(onClick = onEditarClick) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Editar tarea"
                 )
             }
-            // Botón para eliminar la tarea
+
             IconButton(onClick = onEliminarClick) {
                 Icon(
                     imageVector = Icons.Default.Delete,

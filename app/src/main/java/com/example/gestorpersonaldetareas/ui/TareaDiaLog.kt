@@ -2,10 +2,12 @@ package com.example.gestorpersonaldetareas.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -20,16 +22,29 @@ import androidx.compose.ui.unit.dp
 import com.example.gestorpersonaldetareas.model.Prioridad
 import com.example.gestorpersonaldetareas.model.Tarea
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TareaDialog(
-    tareaExistente: Tarea? = null, // Si es null, creamos; si trae una tarea, editamos
+    tareaExistente: Tarea? = null,
     onDismiss: () -> Unit,
     onConfirm: (Tarea) -> Unit
 ) {
-    // Sirve para guadar el estado de los campos de texto en los que el usuario escribe
     var titulo by remember { mutableStateOf(tareaExistente?.titulo ?: "") }
     var descripcion by remember { mutableStateOf(tareaExistente?.descripcion ?: "") }
     var prioridad by remember { mutableStateOf(tareaExistente?.prioridad ?: Prioridad.MEDIA) }
+
+    var menuDesplegado by remember { mutableStateOf(false) }
+    var errorTitulo by remember { mutableStateOf<String?>(null) }
+    var guardando by remember { mutableStateOf(false) }
+
+    fun validarTitulo(texto: String): String? {
+        val limpio = texto.trim()
+        return when {
+            limpio.isEmpty() -> "El título no puede estar vacío"
+            limpio.length < 3 -> "El título debe tener al menos 3 caracteres"
+            else -> null
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -38,11 +53,24 @@ fun TareaDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Campo obligatorio: Título
                 OutlinedTextField(
                     value = titulo,
-                    onValueChange = { titulo = it },
+                    onValueChange = {
+                        titulo = it
+                        if (errorTitulo != null) {
+                            errorTitulo = validarTitulo(it)
+                        }
+                    },
                     label = { Text("Título *") },
+                    isError = errorTitulo != null,
+                    supportingText = {
+                        if (errorTitulo != null) {
+                            Text(
+                                text = errorTitulo!!,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -55,36 +83,58 @@ fun TareaDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text(
-                    text = "Prioridad:",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                ExposedDropdownMenuBox(
+                    expanded = menuDesplegado,
+                    onExpandedChange = { menuDesplegado = it }
+                ) {
+                    OutlinedTextField(
+                        value = prioridad.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Prioridad") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuDesplegado)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
 
-                // Fila con los 3 botones seleccionables (BAJA, MEDIA, ALTA)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Prioridad.entries.forEach { opcion ->
-                        FilterChip(
-                            selected = (prioridad == opcion),
-                            onClick = { prioridad = opcion },
-                            label = { Text(opcion.name) }
-                        )
+                    ExposedDropdownMenu(
+                        expanded = menuDesplegado,
+                        onDismissRequest = { menuDesplegado = false }
+                    ) {
+                        Prioridad.entries.forEach { opcion ->
+                            DropdownMenuItem(
+                                text = { Text(opcion.name) },
+                                onClick = {
+                                    prioridad = opcion
+                                    menuDesplegado = false
+                                }
+                            )
+                        }
                     }
                 }
             }
         },
         confirmButton = {
             TextButton(
-                // Solo activamos el botón Guardar si el título no está vacío
-                enabled = titulo.isNotBlank(),
+                enabled = !guardando,
                 onClick = {
-                    val tareaGuardada = Tarea(
-                        id = tareaExistente?.id ?: 0,
-                        titulo = titulo.trim(),
-                        descripcion = descripcion.trim(),
-                        prioridad = prioridad,
-                        completada = tareaExistente?.completada ?: false
-                    )
-                    onConfirm(tareaGuardada)
+                    val error = validarTitulo(titulo)
+                    if (error != null) {
+                        errorTitulo = error
+                    } else {
+                        guardando = true
+                        val tareaGuardada = Tarea(
+                            id = tareaExistente?.id ?: 0,
+                            titulo = titulo.trim(),
+                            descripcion = descripcion.trim(),
+                            prioridad = prioridad,
+                            completada = tareaExistente?.completada ?: false
+                        )
+                        onConfirm(tareaGuardada)
+                    }
                 }
             ) {
                 Text("Guardar")

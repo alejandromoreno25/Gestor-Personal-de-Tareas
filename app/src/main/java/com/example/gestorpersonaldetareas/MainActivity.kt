@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.gestorpersonaldetareas.data.AppDatabase
 import com.example.gestorpersonaldetareas.model.Tarea
+import com.example.gestorpersonaldetareas.preferencias.PreferenciasDataStore
 import com.example.gestorpersonaldetareas.ui.TareaDialog
 import com.example.gestorpersonaldetareas.ui.TareasScreen
 import com.example.gestorpersonaldetareas.ui.theme.GestorPersonalDeTareasTheme
@@ -20,10 +21,10 @@ import com.example.gestorpersonaldetareas.viewmodel.TareaViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
-    // Inicializamos el ViewModel pasándole el DAO de nuestra base de datos Room
     private val viewModel: TareaViewModel by viewModels {
         val database = AppDatabase.obtenerInstancia(applicationContext)
-        TareaViewModelFactory(database.tareaDao())
+        val preferencias = PreferenciasDataStore(applicationContext)
+        TareaViewModelFactory(database.tareaDao(), preferencias)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,18 +32,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GestorPersonalDeTareasTheme {
-                // Observamos el StateFlow del ViewModel
                 val listaTareas by viewModel.listaTareas.collectAsState()
-                val filtroActual by viewModel.filtroActual.collectAsState()
-                // Actualizamos el StateFlow del ViewModel con el filtro elegido por el usuario
+                val mostrarSoloPendientes by viewModel.mostrarSoloPendientes.collectAsState()
 
                 var mostrarDialogo by remember { mutableStateOf(false) }
                 var tareaAEditar by remember { mutableStateOf<Tarea?>(null) }
 
                 TareasScreen(
                     tareas = listaTareas,
-                    filtroActual = filtroActual,
-                    onFiltroChange = { viewModel.cambiarFiltro(it) },
+                    mostrarSoloPendientes = mostrarSoloPendientes,
+                    onMostrarSoloPendientesChange = { viewModel.cambiarMostrarSoloPendientes(it) },
                     onAgregarClick = {
                         tareaAEditar = null
                         mostrarDialogo = true

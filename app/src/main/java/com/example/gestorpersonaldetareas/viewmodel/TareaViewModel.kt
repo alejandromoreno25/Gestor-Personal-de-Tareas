@@ -5,35 +5,35 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.gestorpersonaldetareas.data.TareaDao
 import com.example.gestorpersonaldetareas.model.Tarea
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.gestorpersonaldetareas.preferencias.PreferenciasDataStore
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-enum class FiltroTarea(val etiqueta: String) {
-    TODAS("Todas"),
-    PENDIENTES("Pendientes"),
-    COMPLETADAS("Completadas")
-}
+class TareaViewModel(
+    private val tareaDao: TareaDao,
+    private val preferencias: PreferenciasDataStore
+) : ViewModel() {
 
-class TareaViewModel(private val tareaDao: TareaDao) : ViewModel() {
+    // Observa la preferencia persistida en DataStore
+    val mostrarSoloPendientes: StateFlow<Boolean> = preferencias.mostrarSoloPendientes
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
-    // Estado privado mutable y estado público de solo lectura para el filtro activo
-    private val _filtroActual = MutableStateFlow(FiltroTarea.TODAS)
-    val filtroActual: StateFlow<FiltroTarea> = _filtroActual.asStateFlow()
-
-    // Combinamos en tiempo real las tareas de Room con el filtro elegido
+    // Combina las tareas de Room con el interruptor de DataStore
     val listaTareas: StateFlow<List<Tarea>> = combine(
         tareaDao.obtenerTodas(),
-        _filtroActual
-    ) { tareas, filtro ->
-        when (filtro) {
-            FiltroTarea.TODAS -> tareas
-            FiltroTarea.PENDIENTES -> tareas.filter { !it.completada }
-            FiltroTarea.COMPLETADAS -> tareas.filter { it.completada }
+        preferencias.mostrarSoloPendientes
+    ) { tareas, soloPendientes ->
+        if (soloPendientes) {
+            tareas.filter { !it.completada }
+        } else {
+            tareas
         }
     }.stateIn(
         scope = viewModelScope,
@@ -41,9 +41,10 @@ class TareaViewModel(private val tareaDao: TareaDao) : ViewModel() {
         initialValue = emptyList()
     )
 
-    fun cambiarFiltro(nuevoFiltro: FiltroTarea) {
-        _filtroActual.value = nuevoFiltro
-
+    fun cambiarMostrarSoloPendientes(soloPendientes: Boolean) {
+        viewModelScope.launch {
+            preferencias.guardarMostrarSoloPendientes(soloPendientes)
+        }
     }
 
     fun agregarTarea(tarea: Tarea) {
@@ -71,11 +72,14 @@ class TareaViewModel(private val tareaDao: TareaDao) : ViewModel() {
     }
 }
 
-class TareaViewModelFactory(private val tareaDao: TareaDao) : ViewModelProvider.Factory {
+class TareaViewModelFactory(
+    private val tareaDao: TareaDao,
+    private val preferencias: PreferenciasDataStore
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TareaViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TareaViewModel(tareaDao) as T
+            return TareaViewModel(tareaDao, preferencias) as T
         }
         throw IllegalArgumentException("Clase ViewModel desconocida")
     }
