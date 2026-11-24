@@ -120,11 +120,4 @@ https://gemini.google.com/share/d/1ithLlOnM8Uim7LZVcKYXTq3RFmBIXG72?usp=sharing
 ---
 
 ## Capturas de pantalla
-- **Listado principal (`Mis Tareas`):**
-  ![Listado principal](../capturas/listado_principal.png)
-- **Formulario de creación (`Nueva Tarea`):**
-  ![Formulario de creación](../capturas/formulario_creacion.png)
-- **Consulta a la API (`Tareas de ejemplo`):**
-  ![Consulta a la API](../capturas/consulta_api.png)
-- **Interacción relevante (Confirmación de borrado / Compartir / Tablet):**
-  ![Interacción relevante](../capturas/interaccion_relevante.png)
+Están en la carpeta capturas me daba error al subirlas aquí
