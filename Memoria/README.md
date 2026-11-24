@@ -110,8 +110,8 @@
 ---
 
 ## Enlace al chat de IA usado durante el desarrollo
-* **Enlace a la conversación:** [Pega aquí el enlace público de este chat]
-
+* **Enlace a la conversación:**
+https://gemini.google.com/share/d/1ithLlOnM8Uim7LZVcKYXTq3RFmBIXG72?usp=sharing
 ---
 
 ## Incidencias conocidas o funcionalidades que no se hayan podido completar
@@ -120,11 +120,11 @@
 ---
 
 ## Capturas de pantalla
-* **Listado principal (`Mis Tareas`):**
+- **Listado principal (`Mis Tareas`):**
   ![Listado principal](capturas/listado_principal.png)
-* **Formulario de creación (`Nueva Tarea`):**
-  ![Formulario de creación](capturas/ formulario_creacion.png)
-* **Consulta a la API (`Tareas de ejemplo`):**
+- **Formulario de creación (`Nueva Tarea`):**
+  ![Formulario de creación](capturas/formulario_creacion.png)
+- **Consulta a la API (`Tareas de ejemplo`):**
   ![Consulta a la API](capturas/consulta_api.png)
-* **Interacción relevante (Confirmación de borrado / Compartir / Tablet):**
+- **Interacción relevante (Confirmación de borrado / Compartir / Tablet):**
   ![Interacción relevante](capturas/interaccion_relevante.png)
